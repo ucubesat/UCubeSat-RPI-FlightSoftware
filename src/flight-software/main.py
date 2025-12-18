@@ -44,7 +44,7 @@ error_count: Counter = Counter(index=Register.error_count)
 logger: Logger = Logger(
     error_counter=error_count,
     colorized=False,
-    log_level=LogLevel.INFO,
+    log_level=LogLevel.DEBUG,  # Change this back to INFO before launch
 )
 
 logger.info(
@@ -52,6 +52,25 @@ logger.info(
     hardware_version=os.uname().version,
     software_version=__version__,
 )
+
+
+def init_camera(
+    cs_pin,
+):  # TODO: Find somewhere to put this, own library or pysquared? i have no idea where to put our stuff tbh
+    cam = ArducamClass(OV2640, spi=spi0, cs_pin=cs_pin, i2c=i2c1)
+
+    cam.Camera_Detection()
+    cam.Spi_Test()
+    cam.Camera_Init()
+    cam.clear_fifo_flag()
+    cam.OV2640_set_JPEG_size(OV2640_1600x1200)
+    cam.SPI_CS_HIGH()
+
+    cam.spi.unlock()
+    cam.i2c.unlock()
+
+    return cam
+
 
 try:
     # loiter_time: int = 5
@@ -66,7 +85,6 @@ try:
     logger.debug("Initializing Config")
     config: Config = Config("config.json")
 
-    # TODO(nateinaction): fix spi init
     spi0: SPI = _spi_init(
         logger,
         board.GP18,  # SCK
@@ -112,29 +130,42 @@ try:
         100000,
     )
 
-    logger.debug("Initializing camera")
-    cam_cs = digitalio.DigitalInOut(board.GP5)
-    cam_cs.direction = digitalio.Direction.OUTPUT
+    logger.debug("Initializing cameras")
+    cam1_cs = digitalio.DigitalInOut(board.GP5)
+    cam1_cs.direction = digitalio.Direction.OUTPUT
+    cam1_cs.value = False
 
-    cam_cs.value = False
+    cam2_cs = digitalio.DigitalInOut(board.GP4)
+    cam2_cs.direction = digitalio.Direction.OUTPUT
+    cam2_cs.value = False
 
     try:
-        cam = ArducamClass(OV2640, spi=spi0, cs_pin=cam_cs, i2c=i2c1)
-        cam.Camera_Detection()
-        cam.Spi_Test()
-        cam.Camera_Init()
-        cam.clear_fifo_flag()
-        cam.OV2640_set_JPEG_size(OV2640_1600x1200)  # TODO: Make configurable
-        cam.spi.unlock()
+        logger.debug("attempting to initialize camera 1")
+        cam1 = init_camera(cam1_cs)
+
+        logger.debug("attempting to initialize camera 2")
+        cam2 = init_camera(cam2_cs)
     except Exception as e:
         logger.critical("Failed to initialize camera", e)
 
-    if not cam.Camera_Detection():
-        logger.critical("Camera not detected")
+    for cam in [cam1, cam2]:
+        if not cam.Camera_Detection():
+            logger.critical("Camera not detected")
 
-    logger.info("Taking test image")
+        cam.clear_fifo_flag()
+        cam.spi.unlock()
+        cam.i2c.unlock()
 
-    bytes_written = cam.capture_image_buffered(logger, file_path="/sd/sample-image.jpg")
+    logger.info("Taking test image on cam 1")
+    bytes_written = cam1.capture_image_buffered(
+        logger, file_path="/sd/sample-image-cam1.jpg"
+    )
+    logger.info(f"Done. {bytes_written} bytes written to SD.")
+
+    logger.info("Taking test image on cam 2")
+    bytes_written = cam2.capture_image_buffered(
+        logger, file_path="/sd/sample-image-cam2.jpg"
+    )
     logger.info(f"Done. {bytes_written} bytes written to SD.")
 
     # magnetometer = LIS2MDLManager(logger, i2c1)

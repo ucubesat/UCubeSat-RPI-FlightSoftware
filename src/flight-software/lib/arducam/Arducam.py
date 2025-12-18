@@ -188,6 +188,10 @@ class ArducamClass(object):
         utime.sleep(0.1)
 
     def Camera_Detection(self):
+        self.spi.try_lock()
+        self.i2c.try_lock()
+
+        # TODO add attempt timeout
         while True:
             if self.CameraType == OV2640:
                 self.I2cAddress = 0x30
@@ -271,7 +275,7 @@ class ArducamClass(object):
             pass
 
     def capture_image_buffered(
-        self, logger: Logger, file_path="/sd/capture.jpg", chunk_size=128, buffer_size=0
+        self, logger: Logger, file_path="", chunk_size=128, buffer_size=0
     ):  # TODO: either always return 0 on failure or raise exception, be more careful with memory
         """
         Read image from Arducam FIFO in specified chunks, writing image to specified file_path.
@@ -281,11 +285,17 @@ class ArducamClass(object):
             logger: PySquared logger
             file_path: Path to attempt writing image to
             chunk_size: chunk size to read from FIFO buffer
-            buffer_size: Max size of buffer before deactivating camera in order to flush to microSD. Set to 0 to use a size of 1/2 remaining memory. If reamining memory is less than 100 bytes, bail out.
+            buffer_size: Max size of buffer before deactivating camera in order to flush to microSD. Set to 0 to use a size of 1/4 remaining memory. If reamining memory is less than 100 bytes, bail out.
 
         Returns:
             total bytes written
         """
+        if file_path == "":
+            logger.debug(
+                "capture_image_buffered called with empty file_path, determining an appropriate path"
+            )
+            # TODO: Determine appropriate filename
+
         self.SPI_CS_LOW()
         tries = 0
         while not self.spi.try_lock():
@@ -358,7 +368,7 @@ class ArducamClass(object):
                             f"Wrote {len(ram_buf)} bytes to SD (remaining {remaining})"
                         )
                     except OSError as e:
-                        logger.error(f"SD write failed: {e}")
+                        logger.error("SD write failed", e)
                         return total
 
                     # Clear RAM buffer
