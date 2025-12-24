@@ -1,6 +1,6 @@
 # PYSQUARED_VERSION ?= v2.0.0-alpha-25w40
 PYSQUARED_BRANCH ?= main
-PYSQUARED_REPO ?= https://github.com/timothyhay256/pysquared-UCubeSat.git
+PYSQUARED_REPO ?= https://github.com/ucubesat/CircuitPython_RP2040_v4_UCubeSat_Test.git
 PYSQUARED ?= git+$(PYSQUARED_REPO)@$(PYSQUARED_BRANCH)
 BOARD_MOUNT_POINT ?= ""
 BOARD_TTY_PORT ?= ""
