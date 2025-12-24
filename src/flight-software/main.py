@@ -9,7 +9,6 @@ Version: 2.0.0
 Published: Nov 19, 2024
 """
 
-import gc
 import os
 import time
 
@@ -28,10 +27,14 @@ from Arducam.Arducam import OV2640, ArducamClass, OV2640_1600x1200
 from lib.proveskit_rp2040_v4.register import Register
 from lib.pysquared.config.config import Config
 from lib.pysquared.hardware.busio import _spi_init, initialize_i2c_bus
+from lib.pysquared.hardware.digitalio import initialize_pin
+from lib.pysquared.hardware.radio.manager.rfm9x import RFM9xManager
 from lib.pysquared.hardware.sd_card.manager.sd_card import SDCardManager
 from lib.pysquared.logger import Logger, LogLevel
 from lib.pysquared.nvm.counter import Counter
 from lib.pysquared.rtc.manager.microcontroller import MicrocontrollerManager
+from pysquared.beacon import Beacon
+from pysquared.hardware.radio.packetizer.packet_manager import PacketManager
 from version import __version__
 
 boot_time: float = time.time()
@@ -104,24 +107,21 @@ try:
     except Exception as e:
         logger.critical("Failed to mount microSD card", e)
 
-    # with open("/sd/test.txt", "w") as f:
-    # f.write("Hello world!\r\n")
+    radio = RFM9xManager(
+        logger,
+        config.radio,
+        spi0,
+        initialize_pin(logger, board.GP3, digitalio.Direction.OUTPUT, True),
+        initialize_pin(logger, board.GP6, digitalio.Direction.OUTPUT, True),
+    )
 
-    # radio = RFM9xManager(
-    #     logger,
-    #     config.radio,
-    #     spi0,
-    #     initialize_pin(logger, board.SPI0_CS0, digitalio.Direction.OUTPUT, True),
-    #     initialize_pin(logger, board.RF1_RST, digitalio.Direction.OUTPUT, True),
-    # )
-
-    # packet_manager = PacketManager(
-    #     logger,
-    #     radio,
-    #     config.radio.license,
-    #     Counter(Register.message_count),
-    #     0.2,
-    # )
+    packet_manager = PacketManager(
+        logger,
+        radio,
+        config.radio.license,
+        Counter(Register.message_count),
+        0.2,
+    )
 
     i2c1 = initialize_i2c_bus(
         logger,
@@ -188,11 +188,30 @@ try:
     #     boot_count,
     # )
 
+    beacon = Beacon(
+        logger,
+        config.cubesat_name,
+        packet_manager,
+        boot_time,
+        radio,
+        error_count,
+        boot_count,
+    )
+
+    logger.info("Sending test beacons")
+
+    packet_manager.send(config.radio.license.encode("utf-8"))
+
+    beacon.send()
+
+    logger.info("Test beacons sent")
+
     def nominal_power_loop():
-        logger.debug(
-            "FC Board Stats",
-            bytes_remaining=gc.mem_free(),
-        )
+        pass
+        # logger.debug(
+        #     "FC Board Stats",
+        #     bytes_remaining=gc.mem_free(),
+        # )
 
         # packet_manager.send(config.radio.license.encode("utf-8"))
 
