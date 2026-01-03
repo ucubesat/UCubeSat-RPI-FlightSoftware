@@ -80,17 +80,28 @@ def init_camera(
 
 
 def transmit_file(
-    logger: Logger, packet_manager: PacketManager, image_path: str, chunk_size: int
+    logger: Logger, packet_manager: PacketManager, file_path: str, chunk_size: int
 ):
+    """
+    Transmit a file using provided packet_manager, chunking the file as specified with `chunk_size`.
+    Transmits the file CRC, individual chunk CRC and index, and the file itself.
+
+    Args:
+        logger: PySquared logger
+        packet_manager: PacketManager to transmit on
+        file_path: path to file to transmit
+        chunk_size: size of each chunk to transmit
+    """
+
     INDICATE_START = 0x01
     INDICATE_DATA = 0x02
     INDICATE_END = 0x03
 
-    img_size = os.stat(image_path)[6]
+    img_size = os.stat(file_path)[6]
     total_chunks = math.ceil(img_size / chunk_size)
 
     file_crc = 0
-    with open(image_path, "rb") as f:
+    with open(file_path, "rb") as f:
         while True:
             chunk = f.read(chunk_size)
             if not chunk:
@@ -102,7 +113,7 @@ def transmit_file(
     packet_manager.send(struct.pack("<BII", INDICATE_START, total_chunks, file_crc))
 
     chunk_index = 0
-    with open(image_path, "rb") as f:
+    with open(file_path, "rb") as f:
         chunk = f.read(chunk_size)
         while chunk:
             crc32 = binascii.crc32(chunk)
