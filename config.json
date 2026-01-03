@@ -74,7 +74,7 @@
     },
     "modulation": "LoRa",
     "start_time": 80000,
-    "transmit_frequency": 437.4
+    "transmit_frequency": 915
   },
   "reboot_time": 3600,
   "repeat_code": "RP",
