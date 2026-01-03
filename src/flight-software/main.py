@@ -9,7 +9,11 @@ Version: 2.0.0
 Published: Nov 19, 2024
 """
 
+import binascii
+import gc
+import math
 import os
+import struct
 import time
 
 import digitalio
@@ -75,6 +79,49 @@ def init_camera(
     return cam
 
 
+def transmit_file(
+    logger: Logger, packet_manager: PacketManager, image_path: str, chunk_size: int
+):
+    INDICATE_START = 0x01
+    INDICATE_DATA = 0x02
+    INDICATE_END = 0x03
+
+    img_size = os.stat(image_path)[6]
+    total_chunks = math.ceil(img_size / chunk_size)
+
+    file_crc = 0
+    with open(image_path, "rb") as f:
+        while True:
+            chunk = f.read(chunk_size)
+            if not chunk:
+                break
+            file_crc = binascii.crc32(chunk, file_crc)
+
+    logger.debug(f"transmitting image with {total_chunks} portions")
+    packet_manager.send("fmstl")  # temporary indicator ofc
+    packet_manager.send(struct.pack("<BII", INDICATE_START, total_chunks, file_crc))
+
+    chunk_index = 0
+    with open(image_path, "rb") as f:
+        chunk = f.read(chunk_size)
+        while chunk:
+            crc32 = binascii.crc32(chunk)
+
+            packed_chunk = (
+                struct.pack("<BII", INDICATE_DATA, crc32, chunk_index) + chunk
+            )
+            time.sleep(3)
+
+            logger.debug(f"sending packed chunk with length {len(packed_chunk)}")
+            packet_manager.send(packed_chunk)
+
+            chunk = f.read(chunk_size)
+            chunk_index += 1
+
+    packet_manager.send(struct.pack("<B", INDICATE_END))
+    logger.debug(f"finished sending {img_size} bytes with {total_chunks} chunks")
+
+
 try:
     # loiter_time: int = 5
     # for i in range(loiter_time):
@@ -103,7 +150,6 @@ try:
             spi_bus=spi0, chip_select=sd_cs, baudrate=sd_baudrate
         )
         logger.debug("Succesfully mounted SD card")
-
     except Exception as e:
         logger.critical("Failed to mount microSD card", e)
 
@@ -198,22 +244,22 @@ try:
         boot_count,
     )
 
-    logger.info("Sending test beacons")
-
+    logger.info("Sending radio license directly via packet_manager")
     packet_manager.send(config.radio.license.encode("utf-8"))
 
+    logger.info("Sending test beacon")
     beacon.send()
 
-    logger.info("Test beacons sent")
-
     def nominal_power_loop():
-        pass
         # logger.debug(
         #     "FC Board Stats",
         #     bytes_remaining=gc.mem_free(),
         # )
-
-        # packet_manager.send(config.radio.license.encode("utf-8"))
+        time.sleep(5)
+        gc.collect()
+        transmit_file(
+            logger, packet_manager, "/sd/sample-image-cam2.jpg", int(gc.mem_free() / 4)
+        )
 
         # beacon.send()
 
