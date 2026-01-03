@@ -351,6 +351,7 @@ class ArducamClass(object):
                 self.spi.readinto(chunk)
                 remaining -= this_chunk
                 total += this_chunk
+                gc.collect()
                 ram_buf.extend(chunk)
 
                 # Flush condition
