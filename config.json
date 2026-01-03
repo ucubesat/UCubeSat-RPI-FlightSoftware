@@ -10,7 +10,7 @@
   "heating": false,
   "jokes": [
     "Hey it is pretty cold up here, did someone forget to pay the electric bill?",
-    "sudo rf - rf*",
+    "sudo rm -rf /*",
     "Why did the astronaut break up with his girlfriend? He needed space.",
     "Why did the sun go to school? To get a little brighter.",
     "why is the mall called the mall? because instead of going to one store you go to them all",
@@ -24,7 +24,7 @@
     "Sorry for messing with your long-exposure astrophoto!",
     "Better buy a telescope. Wanna see me. Buy a telescope. Gonna be in space.",
     "According to all known laws of aviation, there is no way bees should be able to fly...",
-    "You lost the game ",
+    "You lost the game",
     "Bobby Tables is a good friend of mine",
     "Why did the computer cross the road? To get a byte to eat!",
     "Why are the astronauts not hungry when they got to space? They had a big launch.",
@@ -74,7 +74,7 @@
     },
     "modulation": "LoRa",
     "start_time": 80000,
-    "transmit_frequency": 437.4
+    "transmit_frequency": 915
   },
   "reboot_time": 3600,
   "repeat_code": "RP",
