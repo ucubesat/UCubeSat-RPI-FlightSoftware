@@ -1,7 +1,5 @@
-# PYSQUARED_VERSION ?= v2.0.0-alpha-25w40
-PYSQUARED_BRANCH ?= main
-PYSQUARED_REPO ?= https://github.com/ucubesat/CircuitPython_RP2040_v4_UCubeSat_Test.git
-PYSQUARED ?= git+$(PYSQUARED_REPO)@$(PYSQUARED_BRANCH)
+PYSQUARED_VERSION ?= v2.0.0-alpha-25w40
+PYSQUARED ?= git+https://github.com/proveskit/pysquared@$(PYSQUARED_VERSION)\#subdirectory=circuitpython-workspaces/flight-software
 BOARD_MOUNT_POINT ?= ""
 BOARD_TTY_PORT ?= ""
 VERSION ?= $(shell git tag --points-at HEAD --sort=-creatordate < /dev/null | head -n 1)
