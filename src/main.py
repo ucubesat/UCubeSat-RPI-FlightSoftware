@@ -4,7 +4,7 @@
 # Modified By: UCubeSat
 
 """
-Built for the PySquared FC Board
+Built for the PySquared FC Board (lie)
 Version: 2.0.0
 Published: Nov 19, 2024
 """
@@ -20,63 +20,62 @@ import digitalio
 import microcontroller
 from busio import SPI
 
-try:
-    from board_definitions import proveskit_rp2040_v4 as board
-except ImportError:
-    import board
+import board
 
 # SD card
 # Arducam imports
-from Arducam.Arducam import OV2640, ArducamClass, OV2640_1600x1200
-from lib.proveskit_rp2040_v4.register import Register
-from lib.pysquared.config.config import Config
-from lib.pysquared.hardware.busio import _spi_init, initialize_i2c_bus
-from lib.pysquared.hardware.digitalio import initialize_pin
-from lib.pysquared.hardware.radio.manager.rfm9x import RFM9xManager
-from lib.pysquared.hardware.sd_card.manager.sd_card import SDCardManager
-from lib.pysquared.logger import Logger, LogLevel
-from lib.pysquared.nvm.counter import Counter
-from lib.pysquared.rtc.manager.microcontroller import MicrocontrollerManager
-from pysquared.beacon import Beacon
+from pysquared.config.config import Config
+from pysquared.hardware.busio import _spi_init, initialize_i2c_bus
+from pysquared.hardware.digitalio import initialize_pin
+from pysquared.hardware.radio.manager.rfm9x import RFM9xManager
+from pysquared.logger import Logger, LogLevel
+from pysquared.nvm.counter import Counter
+# TODO: Fix RTC
+# from pysquared.rtc.manager.microcontroller import MicrocontrollerManager
+# TODO: Remove (or fix) Processor import in PySquared beacon.py (either remove from beacon or retrieve properly)
+# from pysquared.beacon import Beacon
 from pysquared.hardware.radio.packetizer.packet_manager import PacketManager
 from version import __version__
 
+from register import Register
+
 boot_time: float = time.time()
 
-rtc = MicrocontrollerManager()
+# rtc = MicrocontrollerManager()
 
-(boot_count := Counter(index=Register.boot_count)).increment()
-error_count: Counter = Counter(index=Register.error_count)
+# TODO: Fix Counter in PySquared. Once fixed, change all print calls to use the logger
+# (boot_count := Counter(index=Register.boot_count)).increment()
+# error_count: Counter = Counter(index=Register.error_count)
 
-logger: Logger = Logger(
-    error_counter=error_count,
-    colorized=False,
-    log_level=LogLevel.DEBUG,  # Change this back to INFO before launch
-)
+# logger: Logger = Logger(
+#     error_counter=error_count,
+#     colorized=False,
+#     log_level=LogLevel.DEBUG,  # Change this back to INFO before launch
+# )
 
-logger.info(
-    "Booting",
-    hardware_version=os.uname().version,
-    software_version=__version__,
-)
+# print(
+#     "Booting",
+#     hardware_version=os.uname().version,
+#     software_version=__version__,
+# )
+print("Booting")
 
+# def init_camera(
+#    cs_pin,
+#):  # TODO: Change to new camera code
+#     cam = ArducamClass(OV2640, spi=spi0, cs_pin=cs_pin, i2c=i2c1)
 
-def init_camera(
-    cs_pin,
-):  # TODO: Find somewhere to put this, own library or pysquared? i have no idea where to put our stuff tbh
-    cam = ArducamClass(OV2640, spi=spi0, cs_pin=cs_pin, i2c=i2c1)
+#     cam.Camera_Detection()
+#     cam.Spi_Test()
+#     cam.Camera_Init()
+#     cam.clear_fifo_flag()
+#     cam.OV2640_set_JPEG_size(OV2640_1600x1200)
+#     cam.SPI_CS_HIGH()
 
-    cam.Camera_Detection()
-    cam.Spi_Test()
-    cam.Camera_Init()
-    cam.clear_fifo_flag()
-    cam.OV2640_set_JPEG_size(OV2640_1600x1200)
-    cam.SPI_CS_HIGH()
+#     cam.spi.unlock()
+#     cam.i2c.unlock()
 
-    cam.spi.unlock()
-    cam.i2c.unlock()
-
-    return cam
+#     return cam
 
 
 def transmit_file(
@@ -108,7 +107,8 @@ def transmit_file(
                 break
             file_crc = binascii.crc32(chunk, file_crc)
 
-    logger.debug(f"transmitting image with {total_chunks} portions")
+    # print(f"transmitting image with {total_chunks} portions")
+    print(f"transmitting image with {total_chunks} portions")
     packet_manager.send("fmstl")  # temporary indicator ofc
     packet_manager.send(struct.pack("<BII", INDICATE_START, total_chunks, file_crc))
 
@@ -123,27 +123,27 @@ def transmit_file(
             )
             time.sleep(3)
 
-            logger.debug(f"sending packed chunk with length {len(packed_chunk)}")
+            print(f"sending packed chunk with length {len(packed_chunk)}")
             packet_manager.send(packed_chunk)
 
             chunk = f.read(chunk_size)
             chunk_index += 1
 
     packet_manager.send(struct.pack("<B", INDICATE_END))
-    logger.debug(f"finished sending {img_size} bytes with {total_chunks} chunks")
+    print(f"finished sending {img_size} bytes with {total_chunks} chunks")
 
 
 try:
     # loiter_time: int = 5
     # for i in range(loiter_time):
-    # logger.info(f"Code Starting in {loiter_time-i} seconds")
+    # print(f"Code Starting in {loiter_time-i} seconds")
     # time.sleep(1)
-    logger.info("Code starting")
+    print("Code starting")
 
     # watchdog = Watchdog(logger, board.WDT_WDI)
     # watchdog.pet()
 
-    logger.debug("Initializing Config")
+    print("Initializing Config")
     config: Config = Config("config.json")
 
     spi0: SPI = _spi_init(
@@ -155,14 +155,14 @@ try:
     sd_cs = board.GP17
     sd_baudrate = 400000
 
-    logger.debug("Mounting SD card")
+    print("Mounting SD card")
     try:
         sd_manager = SDCardManager(
             spi_bus=spi0, chip_select=sd_cs, baudrate=sd_baudrate
         )
-        logger.debug("Succesfully mounted SD card")
+        print("Succesfully mounted SD card")
     except Exception as e:
-        logger.critical("Failed to mount microSD card", e)
+        print("Failed to mount microSD card", e)
 
     radio = RFM9xManager(
         logger,
@@ -187,7 +187,7 @@ try:
         100000,
     )
 
-    logger.debug("Initializing cameras")
+    print("Initializing cameras")
     cam1_cs = digitalio.DigitalInOut(board.GP5)
     cam1_cs.direction = digitalio.Direction.OUTPUT
     cam1_cs.value = False
@@ -197,33 +197,33 @@ try:
     cam2_cs.value = False
 
     try:
-        logger.debug("attempting to initialize camera 1")
+        print("attempting to initialize camera 1")
         cam1 = init_camera(cam1_cs)
 
-        logger.debug("attempting to initialize camera 2")
+        print("attempting to initialize camera 2")
         cam2 = init_camera(cam2_cs)
     except Exception as e:
-        logger.critical("Failed to initialize camera", e)
+        print("Failed to initialize camera", e)
 
     for cam in [cam1, cam2]:
         if not cam.Camera_Detection():
-            logger.critical("Camera not detected")
+            print("Camera not detected")
 
         cam.clear_fifo_flag()
         cam.spi.unlock()
         cam.i2c.unlock()
 
-    logger.info("Taking test image on cam 1")
+    print("Taking test image on cam 1")
     bytes_written = cam1.capture_image_buffered(
         logger, file_path="/sd/sample-image-cam1.jpg"
     )
-    logger.info(f"Done. {bytes_written} bytes written to SD.")
+    print(f"Done. {bytes_written} bytes written to SD.")
 
-    logger.info("Taking test image on cam 2")
+    print("Taking test image on cam 2")
     bytes_written = cam2.capture_image_buffered(
         logger, file_path="/sd/sample-image-cam2.jpg"
     )
-    logger.info(f"Done. {bytes_written} bytes written to SD.")
+    print(f"Done. {bytes_written} bytes written to SD.")
 
     # magnetometer = LIS2MDLManager(logger, i2c1)
 
@@ -255,14 +255,14 @@ try:
         boot_count,
     )
 
-    logger.info("Sending radio license directly via packet_manager")
+    print("Sending radio license directly via packet_manager")
     packet_manager.send(config.radio.license.encode("utf-8"))
 
-    logger.info("Sending test beacon")
+    print("Sending test beacon")
     beacon.send()
 
     def nominal_power_loop():
-        # logger.debug(
+        # print(
         #     "FC Board Stats",
         #     bytes_remaining=gc.mem_free(),
         # )
@@ -281,18 +281,18 @@ try:
         # cdh.listen_for_commands(config.sleep_duration)
 
     try:
-        logger.info("Entering main loop")
+        print("Entering main loop")
         while True:
             # TODO(nateinaction): Modify behavior based on power state
             nominal_power_loop()
 
     except Exception as e:
-        logger.critical("Critical in Main Loop", e)
+        print("Critical in Main Loop", e)
         time.sleep(10)
         microcontroller.on_next_reset(microcontroller.RunMode.NORMAL)
         microcontroller.reset()
     finally:
-        logger.info("Going Neutral!")
+        print("Going Neutral!")
 
 except Exception as e:
-    logger.critical("An exception occured within main.py", e)
+    print("An exception occured within main.py", e)

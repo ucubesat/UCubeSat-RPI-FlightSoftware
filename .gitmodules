@@ -1,0 +1,3 @@
+[submodule "src/pysquared"]
+	path = pysquared-repo
+	url = https://github.com/ucubesat/pysquared-UCubeSat.git
