@@ -4,6 +4,8 @@ __pycache__/
 .coverage-reports/
 .DS_Store
 .venv
+venv/
+env/
 artifacts/
 coverage-reports/
 tools/

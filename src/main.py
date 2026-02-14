@@ -33,7 +33,7 @@ from pysquared.nvm.counter import Counter
 # TODO: Fix RTC
 # from pysquared.rtc.manager.microcontroller import MicrocontrollerManager
 # TODO: Remove (or fix) Processor import in PySquared beacon.py (either remove from beacon or retrieve properly)
-# from pysquared.beacon import Beacon
+from pysquared.beacon import Beacon
 from pysquared.hardware.radio.packetizer.packet_manager import PacketManager
 from version import __version__
 
